@@ -1,0 +1,41 @@
+#!/usr/bin/python3
+
+import sys
+import time
+import csv
+
+import pigpio
+
+from dust_filter.PPD42NS import Sensor
+from dust_filter.conversions import pcs_to_ugm3, ugm3_to_aqi
+from dust_filter.datefile import DateFile
+from dust_filter.control import DFControl
+from dust_filter.motor import Motor
+
+def main():
+    config = {'sensor_gpio': 25,
+              'motor_gpios': [21, 26, 20],
+              'poll': 5,# seconds
+              'thresholds': [0.1, 0.2, 0.4, 0.8]
+              }
+
+    pi = pigpio.pi() # Connect to Pi.
+    s = Sensor(pi, config['sensor_gpio'])
+    fo = DateFile('data/dust_', '%Y-%m-%d')
+    control = DFControl(config['thresholds'])
+    #from dust_filter.motor import _DummyPi; dummypi = _DummyPi()  ### XXX
+    motor = Motor(pi, config['motor_gpios'])     ### XXX
+    writer = csv.writer(fo)
+
+    while True:
+        time.sleep(config['poll'])
+        r = s.read()
+        level = control.update(r)
+        writer.writerow( (time.time(), r, level) )
+        motor.set(level)
+        fo.flush()
+
+    pi.stop() # Disconnect from Pi.
+
+if __name__ == '__main__':
+    main()

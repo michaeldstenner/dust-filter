@@ -1,0 +1,93 @@
+#!/usr/bin/env python3
+import csv
+from datetime import datetime
+import math
+
+import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+
+def moving_ave(t, r, N):
+    tf = [ t[i]            for i in range(N, len(t)) ]
+    rf = [ sum(r[i-N:i])/N for i in range(N, len(t))]
+    return (tf, rf)
+
+def exp_smooth(t, r, alpha, beta=0):
+    s = [0]
+    B = 0
+    for v in r[1:]:
+        s.append( alpha * v + (1-alpha)*(s[-1] + B) )
+        B = beta*(s[-1] - s[-2]) + (1-beta)*B
+    return s
+
+def calc_smooth_factor(dt, T):
+    return 1 - math.pow(0.5, float(dt)/float(T))
+
+def dtt(t):
+    return [ datetime.fromtimestamp(d) for d in t ]
+
+t = []
+r = []
+
+from dust_filter.conversions import ugm3_to_aqi, pcs_to_ugm3
+from dust_filter.PPD42NS import ratio_to_conc
+
+with open('dustlog.csv','r') as csvfile:
+    plots = csv.reader(csvfile, delimiter=',')
+    for row in plots:
+        t.append(float(row[0]))
+        ri = float(row[1])
+        #ri = ugm3_to_aqi(pcs_to_ugm3(ratio_to_conc(ri)))
+        r.append(ri)
+        #r.append(float(t[-1] > t[0]+1000 and t[-1] < t[0]+1900))
+        
+fig, ax = plt.subplots()
+t30, r30 = moving_ave(t, r, 6)
+#t300, r300 = moving_ave(t, r, 60)
+
+#alpha60 = calc_smooth_factor(5, 60/2)
+#beta60 = 0
+#beta60 = alpha60/2
+#s60 = exp_smooth(t, r, alpha60, beta60)
+
+#alpha300 = calc_smooth_factor(5, 300/2)
+#beta300 = 0
+#beta300 = alpha300/2
+#s300 = exp_smooth(t, r, alpha300, beta300)
+
+
+#ax.plot(dtt(t), r, 'k', linewidth=0.5)
+#ax.plot(dtt(t30), r30, 'r')
+#ax.plot(dtt(t300), r300, 'b')
+#ax.plot(dtt(t), s60, 'm')
+#ax.plot(dtt(t), s300, 'g')
+
+if True:
+    from dust_filter.control import DFControl
+    thresh = [0.01, 0.02, 0.04, 0.08]
+    dfc = DFControl(thresh)
+    level = []
+    rs = []
+    for ti, ri in zip(t, r):
+        level.append(dfc.update(ri, ti))
+        rs.append(dfc._sv)
+    ax.plot(dtt(t), rs, 'r', linewidth=0.5)
+    #ax.plot(dtt(t), [float(l)/100.0 for l in level], 'g')
+    TOP = 1.2 * max(rs)
+    ax.fill_between(dtt(t), 0, TOP, where=[l == 1 for l in level],
+                facecolor='green', alpha=0.5)
+    ax.fill_between(dtt(t), 0, TOP, where=[l == 2 for l in level],
+                facecolor='yellow', alpha=0.5)
+    ax.fill_between(dtt(t), 0, TOP, where=[l == 3 for l in level],
+                facecolor='red', alpha=0.5)
+    for th in thresh:
+        ax.plot(dtt([t[0],t[-1]]), [th, th], 'b', linewidth=0.6)
+    
+ax.set(xlabel='time (s)', ylabel='LO ratio',
+       title='low occupancy time')
+ax.grid()
+
+fig.savefig("test.png")
+plt.show()
