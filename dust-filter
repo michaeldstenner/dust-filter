@@ -16,7 +16,7 @@ def main():
     config = {'sensor_gpio': 25,
               'motor_gpios': [21, 26, 20],
               'poll': 5,# seconds
-              'thresholds': [0.1, 0.2, 0.4, 0.8]
+              'thresholds': [0.01, 0.02, 0.04, 0.08]
               }
 
     pi = pigpio.pi() # Connect to Pi.
@@ -27,11 +27,16 @@ def main():
     motor = Motor(pi, config['motor_gpios'])     ### XXX
     writer = csv.writer(fo)
 
+    last_r = 0 # this is a brute-force hack to reject outliers... I
+               # should make it cleaner at some point
     while True:
         time.sleep(config['poll'])
         r = s.read()
-        level = control.update(r)
-        writer.writerow( (time.time(), r, level) )
+        if r > 0.8: r = last_r # log... log it!
+        else: last_r = r
+        t = time.time()
+        level = control.update(r, t)
+        writer.writerow( (t, r, level) )
         motor.set(level)
         fo.flush()
 
