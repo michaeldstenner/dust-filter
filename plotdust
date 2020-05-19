@@ -44,7 +44,7 @@ with open('dustlog.csv','r') as csvfile:
         #r.append(float(t[-1] > t[0]+1000 and t[-1] < t[0]+1900))
         
 fig, ax = plt.subplots()
-t30, r30 = moving_ave(t, r, 6)
+t60, r60 = moving_ave(t, r, 12)
 #t300, r300 = moving_ave(t, r, 60)
 
 #alpha60 = calc_smooth_factor(5, 60/2)
@@ -72,8 +72,10 @@ if True:
     rs = []
     for ti, ri in zip(t, r):
         level.append(dfc.update(ri, ti))
+        if ri > 0.5: print(ti, ri)
         rs.append(dfc._sv)
     ax.plot(dtt(t), rs, 'r', linewidth=0.5)
+    ax.plot(dtt(t), r, 'k', linewidth=0.5)
     #ax.plot(dtt(t), [float(l)/100.0 for l in level], 'g')
     TOP = 1.2 * max(rs)
     ax.fill_between(dtt(t), 0, TOP, where=[l == 1 for l in level],
