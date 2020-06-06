@@ -9,8 +9,17 @@ class DateFile(object):
         self._ext = time.strftime(fmt)
         self._fo = open(self.base + self._ext, self.mode)
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self._fo.close()
+
+    def _time(self):
+        return time.localtime()
+
     def _rotate(self):
-        now_ext = time.strftime(self.fmt)
+        now_ext = time.strftime(self.fmt, self._time())
         if not self._ext == now_ext:
             self._ext = now_ext
             self._fo.close()
@@ -25,7 +34,6 @@ class DateFile(object):
 
     def close(self):
         return self._fo.close()
-
 
 if __name__ == '__main__':
     # test

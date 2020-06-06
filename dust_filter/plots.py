@@ -41,6 +41,17 @@ def level_mask(level, v):
     return lm
 
 def mobile_plot(t, level, rr, ra, thresh):
+    """generate a mobile plot
+
+    t      = list of unix timestamps
+    level  = list of motor level (0-3) (one for each timestamp)
+    rr     = list of raw sensor readings (one for each timestamp)
+    ra     = list of average sensor readings (one for each timestamp)
+    thresh = list of 4 threshold values
+
+    return plot data (bytes object containing a png)
+    """
+
     print('entering mobile_plot')
     LOCK.acquire()
     fig, ax = plt.subplots(1)
