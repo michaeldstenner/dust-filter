@@ -3,7 +3,7 @@
 try:
     import pigpio
 except ImportError:
-    print('failed to import pigpio')
+    print('WARNING: failed to import pigpio')
 
 class Sensor:
     """

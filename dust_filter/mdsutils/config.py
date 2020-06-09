@@ -5,7 +5,7 @@ import argparse
 from os.path import exists, dirname
 import argparse
 
-from attrdict import AttrDict
+from .attrdict import AttrDict
 
 DEBUG = False
 

@@ -20,11 +20,10 @@ class DFControl(object):
         self._last_above = [ 0.0 for t in thresholds ]
         self._sv = None
 
-
     def _update_buf(self, v, t=None):
         if t is None: t = time.time()
 
-        while self._buf[0][0] < t - self._buf_len:
+        while self._buf and self._buf[0][0] < t - self._buf_len:
             self._buf.pop(0)
         raw = [ a[1] for a in self._buf if a[0] > t - self.smooth_win ]
         raw.append(v)

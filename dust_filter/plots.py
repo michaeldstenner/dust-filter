@@ -3,13 +3,12 @@ import csv
 from datetime import datetime
 import math
 import io
-import threading
+import logging
 
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
-LOCK = threading.Lock()
 
 def moving_ave(t, r, N):
     tf = [ t[i]            for i in range(N, len(t)) ]
@@ -28,7 +27,7 @@ def calc_smooth_factor(dt, T):
     return 1 - math.pow(0.5, float(dt)/float(T))
 
 def dtt(t):
-    if type(t) is list:
+    if type(t) in (tuple, list):
         return [ datetime.fromtimestamp(d) for d in t ]
     else:
         return datetime.fromtimestamp(t)
@@ -52,10 +51,9 @@ def mobile_plot(t, level, rr, ra, thresh):
     return plot data (bytes object containing a png)
     """
 
-    print('entering mobile_plot')
-    LOCK.acquire()
+    logging.debug('entering mobile_plot')
     fig, ax = plt.subplots(1)
-    print('setting up figure')
+    logging.debug('setting up figure')
     fig.set_size_inches(4, 2.5)
     fig.patch.set_facecolor((0,0,0))
     ax.set_facecolor((0,0,0))
@@ -76,7 +74,7 @@ def mobile_plot(t, level, rr, ra, thresh):
     rrp = [ r*100.0 for r in rr ]
     rap = [ r*100.0 for r in ra ]
     thp = [ th*100.0 for th in thresh ]
-    print('plotting')
+    logging.debug('plotting')
     ax.plot(dtt(t), rrp, 'r', marker='.', linewidth=0.5)
     ax.plot(dtt(t), rap, 'w', marker='.', linewidth=0.5)
     TOP = 1.2 * max( (max(rrp), thp[-1]) )
@@ -94,13 +92,13 @@ def mobile_plot(t, level, rr, ra, thresh):
     ax.xaxis.set_major_locator(matplotlib.dates.MinuteLocator(interval=1))
     ax.axes.xaxis.set_ticklabels([])
     fo = io.BytesIO()
-    print('saving fig')
+    logging.debug('saving fig')
     fig.savefig(format='png', fname=fo, transparent=True, dpi=200)
+    plt.close()
     fo.seek(0)
     data = fo.read()
     fo.close()
-    LOCK.release()
-    print('leaving mobile_plot')
+    logging.debug('leaving mobile_plot')
     return data
 
 def _test_data():
@@ -111,7 +109,7 @@ def _test_data():
     t = []
     level = []
     
-    from control import DFControl
+    from .control import DFControl
     thresh = [0.01, 0.02, 0.04, 0.08]
     dfc = DFControl(thresh)
     import pathlib
@@ -132,20 +130,26 @@ def _test_data():
             level.append(li)
     return t, level, rr, ra, thresh
     
-def plotproc(pipe):
+def plotproc(logq, pipe):
+    h = logging.handlers.QueueHandler(logq)
+    root = logging.getLogger()
+    root.addHandler(h)
+    root.setLevel(logging.DEBUG)
     while True:
-        print('child reading from pipe ...')
+        logging.debug('plot proc reading from pipe ...')
         d = pipe.recv()
-        print('child received data from pipe')
+        logging.debug('plot proc received data from pipe')
         if d is None:
-            print('child exiting')
+            logging.debug('plot proc exiting')
             break
-        print('child generating plot')
+        logging.debug('plot proc generating plot')
         data = mobile_plot(*d)
-        print('child sending plot data back')
+        logging.debug('plot proc sending plot data back')
         pipe.send(data)
 
 if __name__ == '__main__':
+    root = logging.getLogger()
+    root.setLevel(logging.DEBUG)
     t, level, rr, ra, thresh = _test_data()
     data = mobile_plot(t, level, rr, ra, thresh)
     with open('output.png', 'bw') as fo:

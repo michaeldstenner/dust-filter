@@ -1,3 +1,4 @@
+import logging
 import time
 
 class Motor(object):
@@ -10,9 +11,6 @@ class Motor(object):
     def set(self, val):
         now = time.time()
         diff = now - self._last
-        if diff < self.limit:
-            msg = 'rate limit: last set %f seconds ago. limit is %f'
-            raise Exception(msg % (diff, self.limit))
         self._last = now
 
         old_val = self.get()
@@ -23,11 +21,19 @@ class Motor(object):
                 pi.write(g, 0)
             old_val = self.get() # check again
             if old_val is None: # uh-oh... double-problem
+                logging.error('cannot turn off GPIOs')
                 raise ValueError('cannot turn off GPIOs')
 
         # if there is no change, just return
         if val == old_val:
             return
+
+        if diff < self.limit:
+            msg = 'motor change rate lime: last set %f seconds ago. ' \
+                'limit is %f.  Ignoring this chnage.'
+            logging.warn(msg, diff, self.limit)
+            return
+            #raise Exception(msg % (diff, self.limit))
 
         if old_val: # if something is on, we need to turn it off
             self.pi.write(self.gpios[old_val-1], 0)
