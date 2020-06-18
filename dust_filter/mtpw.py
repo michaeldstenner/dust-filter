@@ -20,10 +20,11 @@ class FWrap(object):
         print('parent got response')
         return resp
             
-        
     def watch_loop(self):
         while True:
-            with self.lock:
+            self.cp.poll(None)
+            
+            with self.clock:
                 print('child reading from pipe ...')
                 args, kwargs = self.cp.recv()
                 print('child calling target process')

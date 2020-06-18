@@ -1,18 +1,23 @@
 import logging
+import threading
+
 
 import werkzeug
 import flask
 from flask import Flask, render_template, request, g, abort
 
 app = Flask(__name__)
+app.config['TEMPLATES_AUTO_RELOAD'] = True
 
 @app.route('/', methods=['GET'])
 def index():
     r = PWC.index()
     fd = dict(labels   = ['Auto', 'High', 'Med', 'Low', 'Off'],
               selected = r['selected'],
-              active   = r['active'])
+              active   = r['active'],
+              average  = r['average'])
     return render_template('index.html',**fd)
+
 
 @app.route('/images/plot.png', methods=['GET'])
 def images_plot():
@@ -26,8 +31,15 @@ def images_plot():
     
 @app.route('/mode', methods=['POST'])
 def mode():
-    logging.info('POST mode: %s', request.form['selected'])
+    logging.info('POST mode: %s', request.form)
     PWC.mode(request.form['selected'])
+    return render_template('mode.html')
+
+@app.route('/thresholds', methods=['POST'])
+def thresholds():
+    logging.info('POST thresholds: %s', request.form)
+
+    PWC.thresholds(thresholds)
     return render_template('mode.html')
 
 class _dummyDFObj(object):
@@ -50,14 +62,16 @@ class _dummyDFObj(object):
 
 class PipeWrapCaller(object):
     def __init__(self, pipe):
+        self.lock = threading.Lock()
         logging.debug('initiating PipeWrapCaller')
         self.pipe = pipe
     def __getattr__(self, attr):
         logging.debug('PipeWrapCaller getting: %s', attr)
         def _lambda(*args, **kwargs):
             logging.debug('PipeWrapCaller (%s, %s, %s)', attr, args, kwargs)
-            self.pipe.send( (attr, args, kwargs) )
-            ret = self.pipe.recv()
+            with self.lock:
+                self.pipe.send( (attr, args, kwargs) )
+                ret = self.pipe.recv()
             logging.debug('PipeWrapCaller %s --> %10.10s...', attr, ret)
             return ret
         return _lambda

@@ -1,3 +1,4 @@
+
 #!/usr/bin/python3
 
 import sys
@@ -148,10 +149,13 @@ class DustFilter(object):
         meth, args, kwargs = self.web_conn.recv()
         resp = getattr(self, '_web_'+meth)(*args, **kwargs)
         self.web_conn.send(resp)
+        logging.debug('web request: (%s, %s, %s) -> %s',
+                      meth, args, kwargs, resp)
 
     def _web_index(self):
         r = {'selected': MODEMAP[self.conf.mode],
-             'active': MODEMAP[self.motor.get()]}
+             'active': MODEMAP[self.motor.get()],
+             'average': self.control._sv * 100}
         return r
 
     def _web_image(self):
