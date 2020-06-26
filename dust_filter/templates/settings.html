@@ -1,0 +1,111 @@
+<!DOCTYPE HTML>
+<html>
+    <style>
+     body { background-color: #000000; }
+     
+     #selected {
+	 border: 0.5ch solid green;
+     }
+
+     #active {
+	 background-color: #444444;
+     }
+
+     #activeselected {
+	 border: 12px solid green;
+	 background-color: #444444;
+     }
+
+     .tdiv {
+	 margin: auto;
+	 display: flex;
+	 align-items: center
+     }
+     
+     
+     label {
+	 color: white;
+	 height: 10vw;
+	 font-size: 8vw;
+	 margin-left: 14vw;
+	 display: flex;
+	 align-items: center
+     }
+
+     .thresh {
+	 width: 20vw;
+	 height: 10vw;
+	 font-size: 8vw;
+	 color: white;
+	 border: none;
+	 background: #000000;
+	 text-align: right;
+     }
+
+     #cancel, #submit {
+	 width: 45vw;
+	 font-family: sans-serif;
+	 font-size: 6vw;
+	 color: white;
+	 background-color: #000033;
+	 border: 2px solid blue;
+	 text-align: center;
+	 padding: 10px;
+	 margin: 0 auto;
+     }
+
+     .num-box {
+	 float: right;
+	 margin: 10px;
+	 font-size: 35vw;
+	 color: white;
+     }
+
+     .settings {
+	 display: inline-block;
+	 margin: 10px;
+	 width: 56vw;
+	 font-size: 10vw;
+	 color: white;
+	 position: absolute;
+	 bottom: 3vh;
+	 right: 10vw;
+     }
+
+     a:link, a:visited, a:hover, a:active {
+	 background-color: #000033;
+	 color: white;
+	 width: 100%;
+	 padding: 10px;
+	 margin: 0 auto;
+	 border: 2px solid blue;
+	 text-align: center;
+	 text-decoration: none;
+	 display: inline-block;
+     }
+     
+    </style>
+    <head>
+	<title>Settings</title>
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="viewport" content="viewport-fit=cover, user-scalable=no,
+		    width=device-width, initial-scale=1,
+		    maximum-scale=1"> -->
+    </head>
+    <body>
+	<form method="POST" action="/settings">
+            {% for i in range(4,0,-1) %}
+	    <div class="tdiv">
+		<label for="t{{ i }}">Threshold #{{i}}</label>
+		<input type="number" class="thresh"
+		       name="t{{ i }}" id="t{{ i }}"
+		       min="1" max="20" pattern="\d+(\.\d+)?"
+		       value="{{thresholds[i-1]}}">
+	    </div><br />
+	    {% endfor %}
+
+	    <a id="cancel" href="/">Return</a>
+	    <button id="submit" name="action" value="submit">Submit</button>
+	</form>
+    </body>
+</html>

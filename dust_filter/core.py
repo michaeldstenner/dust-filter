@@ -90,6 +90,7 @@ class DustFilter(object):
         c_default = config.load_config(DEFAULT_CONFIG, source='<default>')
         configs = [c_default] + c_files + [c_cl]
         self.conf = config.merge_configs(configs)
+        
 
     def dump_config(self):
         # save mode and thresholds
@@ -146,16 +147,29 @@ class DustFilter(object):
         self._plot_time = self._time()
 
     def web_request(self):
-        meth, args, kwargs = self.web_conn.recv()
-        resp = getattr(self, '_web_'+meth)(*args, **kwargs)
-        self.web_conn.send(resp)
-        logging.debug('web request: (%s, %s, %s) -> %s',
+        try:
+            meth, args, kwargs = self.web_conn.recv()
+        except Exception as e:
+            logging.exception('exception raised in web_request')
+            return None
+        logging.debug('handling web request: (%s, %s, %s)',
+                      meth, args, kwargs)
+        try:
+            resp = getattr(self, '_web_'+meth)(*args, **kwargs)
+            self.web_conn.send(resp)
+        except Exception as e:
+            logging.exception('exception raised in web_request: (%s, %s, %s)',
+                              meth, args, kwargs)
+            return None
+
+        logging.debug('web request: (%s, %s, %s) -> %20.20s',
                       meth, args, kwargs, resp)
 
     def _web_index(self):
         r = {'selected': MODEMAP[self.conf.mode],
              'active': MODEMAP[self.motor.get()],
-             'average': self.control._sv * 100}
+             'average': self.control._sv * 100,
+             'thresholds': [ 100 * t for t in self.conf.thresholds] }
         return r
 
     def _web_image(self):
@@ -169,16 +183,27 @@ class DustFilter(object):
                      oldmode, self.conf.mode)
         if self.conf.mode == 'Auto': self.motor.set(self.level)
         else:                        self.motor.set(self.conf.mode)
-        self.dump_config()
 
-    def _web_thresholds(self, thresholds):
+    def _web_settings(self, settings=None):
+        if settings is not None:
+            self._apply_settings(settings)
+        th = [ t * 100 for t in self.conf.thresholds ]
+        ret = {'thresholds': th}
+        return ret
+
+    def _apply_settings(self, settings):
+        logging.info('settings: %s', settings)
+        thresholds = settings.get('thresholds')
+        if not thresholds: return
+        thresholds = [ t / 100.0 for t in thresholds ]
         self.conf.thresholds = thresholds
         self.level = self.control.set_thresholds(thresholds)
         self.send_plot_data()
         if self.conf.mode == 'Auto': self.motor.set(self.level)
         else:                        self.motor.set(self.conf.mode)
+        
         self.dump_config()
-    
+        
     def loop(self):
         next_read_time = math.ceil(self._time())
         while True:
@@ -203,7 +228,8 @@ class DustFilter(object):
 def log_process(logq):
     root = logging.getLogger()
     hf = logging.handlers.TimedRotatingFileHandler
-    h = hf('dust_debug.log', 'midnight', backupCount=7)
+    logfile = logq.get()
+    h = hf(logfile, 'midnight', backupCount=7)
     fmt = '%(asctime)s %(processName)-6s %(name)-5.5s ' \
         '%(levelname)-5.5s %(message)s'
     f = logging.Formatter(fmt)

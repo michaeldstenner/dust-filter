@@ -12,12 +12,22 @@ app.config['TEMPLATES_AUTO_RELOAD'] = True
 @app.route('/', methods=['GET'])
 def index():
     r = PWC.index()
+    ave_p, thresh_p = _barplot_data(r['average'], r['thresholds'])
+
     fd = dict(labels   = ['Auto', 'High', 'Med', 'Low', 'Off'],
               selected = r['selected'],
               active   = r['active'],
-              average  = r['average'])
+              average  = r['average'],
+              ave_p    = ave_p,
+              thresh_p = thresh_p)
+    
     return render_template('index.html',**fd)
 
+def _barplot_data(average, thresholds):
+    pmax = 1.2 * max( thresholds + [average] )
+    tp = [ int(100 * t / pmax) for t in thresholds ]
+    ap = int(100 * average / pmax)
+    return ap, tp
 
 @app.route('/images/plot.png', methods=['GET'])
 def images_plot():
@@ -33,14 +43,24 @@ def images_plot():
 def mode():
     logging.info('POST mode: %s', request.form)
     PWC.mode(request.form['selected'])
-    return render_template('mode.html')
+    return render_template('redir-index.html')
 
-@app.route('/thresholds', methods=['POST'])
-def thresholds():
-    logging.info('POST thresholds: %s', request.form)
+@app.route('/settings', methods=['GET', 'POST'])
+def settings():
+    if request.method == 'GET':
+        logging.info('GET settings')
+        settings = PWC.settings()
+        return render_template('settings.html', **settings)
+    else: # POST
+        logging.info('POST settings: %s', request.form)
+        f = request.form
+        thresholds = [ float(f[k]) for k in ('t1', 't2', 't3', 't4') ]
+        settings = {'thresholds': thresholds}
+        
+        settings = PWC.settings(settings)
+        return render_template('settings.html', **settings)
+        
 
-    PWC.thresholds(thresholds)
-    return render_template('mode.html')
 
 class _dummyDFObj(object):
     def __init__(self):
