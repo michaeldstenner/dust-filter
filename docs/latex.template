@@ -1,0 +1,57 @@
+%!TEX TS-program = xelatex
+\documentclass{ManPage}  
+
+% Web-style links:
+
+% markdown inclines us to use links, since our texts can be made into html. 
+% Why not have clickable blue links even in 
+% learned, scientific, religious, juridical, poetical and other suchlike texts? 
+% Never mind that they have been proven to destroy the nervous system!
+
+% First, what about the fact that links like http://example.com are 
+% technically code and thus must not be broken across lines? 
+% [breaklinks=true] to the rescue!
+
+% Nowadays LaTeX can handle all of this with another half million macros:
+
+\usepackage[breaklinks=true]{hyperref}
+\hypersetup{colorlinks,%
+citecolor=blue,%
+filecolor=blue,%
+linkcolor=blue,%
+urlcolor=blue}
+$if(url)$
+\usepackage{url}
+$endif$
+
+$if(pdf_title)$
+\title{$pdf_title$}
+$else$
+\title{$title$}
+$endif$
+$if(pdf_version)$
+\version{$pdf_version$}
+$else$
+\version{$version$}
+$endif$
+\date{\today}  % format: January 25, 2017
+
+\begin{document}
+\maketitle
+
+$if(toc)$
+\tableofcontents
+$endif$
+
+$if(alignment)$
+\begin{$alignment$}
+$endif$
+
+$body$
+
+%$if(alignment)$
+\end{$alignment$}
+$endif$
+
+
+\end{document}

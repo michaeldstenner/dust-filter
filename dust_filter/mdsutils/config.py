@@ -97,6 +97,7 @@ def convert_command_line_args(args, trans=None, prefix=None):
        'debug' -->  'cl.debug'
     """
     config = AttrDict()
+    config._source = '<command line>'
     if trans is None: trans = {}
     if isinstance(args, argparse.Namespace): args = vars(args)
     for k, v in args.items():
@@ -116,6 +117,7 @@ def merge_configs(config_list, sections=None):
                 #print('removing', s)
                 config.deepdel(s)
         config.deepupdate(c, copy=True)
+    if '_source' in config: del config['_source']
     return config
 
 def configure_logging(config):

@@ -1,0 +1,13 @@
+[Unit]
+Description=df2000
+After=pigpio.service
+Requires=pigpio.service
+
+[Service]
+TimeoutStartSec=0
+Restart=always
+ExecStart=/usr/bin/df2000
+
+[Install]
+WantedBy=multi-user.target
+

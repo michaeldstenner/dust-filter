@@ -8,6 +8,7 @@ import multiprocessing
 import logging
 import math
 import select
+import pprint
 
 from . import plots
 from . import dfserver
@@ -22,15 +23,16 @@ DEFAULT_CONFIG = """
 sensor_gpio: 25
 motor_gpios: [21, 26, 20]
 poll: 5 # seconds
-thresholds: [0.01, 0.02, 0.04, 0.08]
+thresholds: [0.02, 0.04, 0.08, 0.16]
 mode: Auto  # Auto, Off, Low, Med, High
 data_prefix: data/dust_
+log_prefix: log/dust.log
 mock: false
 mock_start: 1589722589.97081
 mock_speed: 1.0
 """
 
-CONFIG_PATH=['./dfconfig.yaml']
+CONFIG_PATH=['/etc/df2000.yaml', './df2000.yaml']
 
 #    config = {'sensor_gpio': 25,
 #              'motor_gpios': [21, 26, 20],
@@ -69,7 +71,7 @@ class DustFilter(object):
                 import pigpio
             except ImportError:
                 print('Failed to import pigpio - running on a pi?')
-                print('Use -M')
+                print('Use -M to run with mock hardware')
                 sys.exit(1)
             self.pi = pigpio.pi()
             self.sensor = Sensor(self.pi, c.sensor_gpio)
@@ -84,13 +86,27 @@ class DustFilter(object):
         a = p.add_argument
         a('-M', '--mock', action='store_true',
           help='use mock hardware and data for testing')
+        a('-C', '--conf',
+          help='append FILE to the config file path')
+        a('--dump-config', action='store_true',
+          help='dump the config and exit')
         args = p.parse_args()
         c_cl = config.convert_command_line_args(args)
+        if c_cl.conf: CONFIG_PATH.append(c_cl.conf)
         c_files = config.load_config_files(CONFIG_PATH)
         c_default = config.load_config(DEFAULT_CONFIG, source='<default>')
         configs = [c_default] + c_files + [c_cl]
         self.conf = config.merge_configs(configs)
-        
+        self.conf._configs = configs
+        if self.conf.dump_config:
+            pprint.pprint(self.conf)
+            self.exit()
+
+
+    def exit(self):
+        for c in multiprocessing.active_children():
+            c.terminate()
+        sys.exit()
 
     def dump_config(self):
         # save mode and thresholds
@@ -282,8 +298,10 @@ def start_helpers():
 
 def main():
     logq, plot_conn, web_conn = start_helpers()
+    df = DustFilter(plot_conn, web_conn)
+    logq.put(df.conf.log_prefix)
     logging.info('starting DustFilter instance')
-    df = DustFilter(plot_conn, web_conn).loop()
+    df.loop()
 
 if __name__ == '__main__':
     main()
