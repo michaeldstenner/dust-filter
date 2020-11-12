@@ -1,0 +1,23 @@
+[bumpversion]
+commit = False
+tag = False
+current_version = 0.0.1
+
+[bumpversion:file:.baseversion.master]
+
+[bumpversion:part:minor]
+values = 0
+	2
+	4
+	6
+	8
+	10
+	12
+	14
+	16
+	18
+	20
+
+[bumpversion:part:release]
+values = none
+
