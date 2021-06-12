@@ -105,10 +105,10 @@ def main(logq, pipe):
     logging.info('starting web server')
     global PWC
     PWC = PipeWrapCaller(pipe)
-    if werkzeug.serving.is_running_from_reloader():
-        logging.info('flask running in reloader')
+    #if werkzeug.serving.is_running_from_reloader():
+    #    logging.info('flask running in reloader')
     app.run(debug=False, host="0.0.0.0")
-    
+
 if __name__ == '__main__':
     pass
 

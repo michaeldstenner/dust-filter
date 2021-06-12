@@ -25,7 +25,7 @@ motor_gpios: [21, 26, 20]
 poll: 5 # seconds
 thresholds: [0.02, 0.04, 0.08, 0.16]
 mode: Auto  # Auto, Off, Low, Med, High
-data_prefix: data/dust_
+data_prefix: log/dust_
 log_prefix: log/dust.log
 mock: false
 mock_start: 1589722589.97081
@@ -165,6 +165,9 @@ class DustFilter(object):
     def web_request(self):
         try:
             meth, args, kwargs = self.web_conn.recv()
+        except EOFError:
+            logging.exception('EOF received from web server process')
+            self.exit()
         except Exception as e:
             logging.exception('exception raised in web_request')
             return None

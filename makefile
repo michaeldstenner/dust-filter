@@ -3,7 +3,10 @@
 PACKAGE=dust_filter
 SDIST_DEPS = $(PACKAGE)/*.py $(addprefix $(PACKAGE)/, DATE VERSION) \
 	makefile setup.py MANIFEST.in
+CLEAN_FILES = log
 ###################################################################
+SHELL := /bin/bash
+
 # Standard Makefile Variables
 
 # Version Management
@@ -21,7 +24,7 @@ export VERSION := $(if $(GIT_VERSION),$(GIT_VERSION),$(BASE_VERSION))
 DATE := $(if $(GIT_VERSION), $(TODAY), $(BASE_DATE))
 #DATE = $(BASE_DATE)
 export UVERSION := $(shell echo $(VERSION) | sed -e s/\\./_/g)
-BUMPVERSION := maint/bumpversion --config-file=.bumpversion.$(GIT_BRANCH)
+BUMPVERSION := bumpversion --config-file=.bumpversion.$(GIT_BRANCH)
 
 ###############################################################################
 # Standard Build Targets
@@ -63,7 +66,7 @@ deb: .deb.build FORCE
 	touch .deb.build
 
 clean:
-	/bin/rm -rf sdist dist build .*.build
+	/bin/rm -rf sdist dist build .*.build $(CLEAN_FILES)
 	$(MAKE) -C docs clean
 
 ########################################################################
@@ -105,5 +108,6 @@ ensure_release_branch:
 # Custom Targets
 
 test:
-	python3.8 -m dust_filter.core -M
+	mkdir -p log
+	python3 -m dust_filter.core -M
 

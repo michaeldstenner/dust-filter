@@ -15,7 +15,7 @@ for _i, _a in enumerate(_sys.argv):
         break
 else:
     version = getattr(_package, '__version__', '0')
-_authors = _re.split(r',\s+', getattr(_package, '__author__', '')
+_authors = _re.split(r',\s+', getattr(_package, '__author__', ''))
 author       = ', '.join([_re.sub(r'\s+<.*',        r'', _) for _ in _authors])
 author_email = ', '.join([_re.sub(r'(^.*<)|(>.*$)', r'', _) for _ in _authors])
 url = getattr(_package, '__url__', '(none)')
@@ -66,7 +66,7 @@ cmdclass = {
 # load up distutils
 if __name__ == '__main__':
     config = globals().copy()
-    keys = config.keys()
+    keys = list(config)
     for k in keys:
     #print '%-20s -> %s' % (k, config[k])
         if k.startswith('_'): del config[k]
